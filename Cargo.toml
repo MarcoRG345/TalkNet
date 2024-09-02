@@ -7,3 +7,4 @@ edition = "2021"
 members = ["src/client", "src/server"]
 
 [dependencies]
+serde = {version = "1",  features = ["derive"]}
