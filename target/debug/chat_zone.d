@@ -1,1 +1,0 @@
-/home/marco/Desktop/modelado/chat_zone/target/debug/chat_zone: /home/marco/Desktop/modelado/chat_zone/src/common/connection.rs /home/marco/Desktop/modelado/chat_zone/src/common/mod.rs /home/marco/Desktop/modelado/chat_zone/src/common/types_msg.rs /home/marco/Desktop/modelado/chat_zone/src/common/user.rs /home/marco/Desktop/modelado/chat_zone/src/main.rs
