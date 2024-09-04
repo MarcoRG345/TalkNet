@@ -6,8 +6,20 @@ version = 3
 name = "chat_zone"
 version = "0.1.0"
 dependencies = [
+ "common",
  "serde",
 ]
+
+[[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "common",
+]
+
+[[package]]
+name = "common"
+version = "0.1.0"
 
 [[package]]
 name = "proc-macro2"
@@ -45,6 +57,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "common",
 ]
 
 [[package]]

@@ -1,5 +1,4 @@
-pub mod common;
-use crate::common::user::User;
+use common::user::User;
 fn main() {
     println!("Hello, world!");
     let id = String::from("Marco");

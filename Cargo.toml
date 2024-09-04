@@ -5,11 +5,15 @@ edition = "2021"
 
 [dependencies]
 serde = {version = "1",  features = ["derive"]}
+common = {path = "src/common"}
+
+[workspace]
+members = ["src/client", "src/server", "src/common"]
 
 [[bin]]
 name = "client"
-path = "src/client/main.rs"
+path = "src/client/source/main.rs"
 
 [[bin]]
 name = "server"
-path = "src/server/main.rs"
+path = "src/server/source/main.rs"
