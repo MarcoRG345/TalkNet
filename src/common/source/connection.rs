@@ -1,21 +1,23 @@
-use std::net::{Ipv4Addr, SocketAddrV4};
-
+use serde_json::Value;
+use std::io::{BufReader, Read, Write};
+use std::net::{Ipv4Addr, SocketAddrV4, TcpStream};
 pub struct Connection {
-    socket: SocketAddrV4,
-    reader: Vec<u32>,
-    writer: Vec<u32>,
+    stream: TcpStream,
 }
 impl Connection {
-    fn new() -> Self {
-        let socket = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8000);
-        let mut v: Vec<u32> = Vec::new();
-        for i in 0..1024 {
-            v.push(i);
+    pub fn new(stream: TcpStream) -> Self {
+        Connection { stream }
+    }
+    //recibir peticion en bytes y proporciona el json.
+    pub fn recv_from(&self, mut stream: &TcpStream) {
+        let mut reader: Vec<u8> = Vec::new();
+        if let Ok(v) = stream.read_to_end(&mut reader) {
+            let data: u8 = v as u8;
+            let data_slice = std::slice::from_ref(&data);
+            let data_json = std::str::from_utf8(data_slice).unwrap();
         }
-        Connection {
-            socket,
-            reader: v.clone(),
-            writer: v,
-        }
+    }
+    pub fn get_stream(&self) -> &TcpStream {
+        &self.stream
     }
 }
