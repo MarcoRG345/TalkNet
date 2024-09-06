@@ -1,22 +1,31 @@
+use serde::{Deserialize, Serialize};
+use serde_json::{Result, Value};
+use std::hash::Hash;
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct User {
-    id: String,
-    status: String,
+    id: Value,
+    status: Value,
 }
 impl User {
-    pub fn new(id: &String, status: &String) -> Self {
+    pub fn new(id: &Value, status: Value) -> Self {
         User {
-            id: id.to_string(),
-            status: status.to_string(),
+            id: id.clone(),
+            status,
         }
     }
 
-    pub fn get_id(&self) -> &String {
+    pub fn get_id(&self) -> &Value {
         &self.id
     }
-    pub fn get_status(&self) -> &String {
+    pub fn get_status(&self) -> &Value {
         &self.status
     }
     pub fn set_status(&mut self, status: &String) {
-        self.status = status.to_string();
+        self.status = serde_json::to_value(status.to_string()).unwrap();
+    }
+    pub fn parse_me(&self, data: &str) -> User {
+        let u: User = serde_json::from_str(data).unwrap();
+        u
     }
 }

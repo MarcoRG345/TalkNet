@@ -1,0 +1,9 @@
+use common::connection::Connection;
+struct Client {
+    connection: Connection,
+}
+impl Client {
+    pub fn new(connection: &Connection) -> Self {
+        Client { connection }
+    }
+}

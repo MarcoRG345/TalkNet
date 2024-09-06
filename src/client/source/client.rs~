@@ -1,0 +1,19 @@
+use common::connection::Connection;
+pub struct Client {
+    /* Connection client/server. The TcpStream here is from him.  */
+    connection: Connection,
+    /* New TcpStream to connect with the server. The TcpStream here is from the server. */
+    stream: TcpStream,
+}
+impl Client {
+    pub fn new(connection: &Connection) -> Self {
+        stream = TcpStream::connect("127.0.0.1:8001");
+        Client { connection, stream }
+    }
+    pub fn send_to_connection(&self, request: &String) {
+        self.connection.send_to(request, &stream);
+    }
+    pub fn recv_from_connection(&self) -> String {
+        self.connection.recv_from(&stream)
+    }
+}

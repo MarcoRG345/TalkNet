@@ -5,17 +5,23 @@ pub struct Connection {
     stream: TcpStream,
 }
 impl Connection {
-    pub fn new(stream: TcpStream) -> Self {
+    pub fn new() -> Self {
+        let mut stream = TcpStream::connect("127.0.0.1:8001").unwrap();
         Connection { stream }
     }
-    //recibir peticion en bytes y proporciona el json.
-    pub fn recv_from(&self, mut stream: &TcpStream) {
-        let mut reader: Vec<u8> = Vec::new();
-        if let Ok(v) = stream.read_to_end(&mut reader) {
-            let data: u8 = v as u8;
-            let data_slice = std::slice::from_ref(&data);
-            let data_json = std::str::from_utf8(data_slice).unwrap();
-        }
+    /**
+    	* This method will recieve from other stream and returns the data
+    	* in a JSON representation.
+    	*/
+    pub fn recv_from(&self, mut stream: &TcpStream) -> String {
+        let mut buffer: String = String::new();
+        let mut reader = BufReader::new(&mut stream);
+        reader.read_to_string(&mut buffer);
+        buffer
+    }
+    pub fn send_to(&self, data: &String, mut stream: &TcpStream) {
+        let mut data_bytes = data.as_bytes();
+        stream.write_all(&data_bytes);
     }
     pub fn get_stream(&self) -> &TcpStream {
         &self.stream
