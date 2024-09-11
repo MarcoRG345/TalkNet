@@ -14,24 +14,25 @@ async fn start_server(){
 	let server = Arc::new(Mutex::new(server::Server::new()));
 	loop{
 		let (mut stream, addr) = listener.accept().await.unwrap();
-		println!("paso esta prueba");
 		let (mut reader, mut writer) = io::split(stream);
 		let (sender_tx, mut reciver_rx) = mpsc::unbounded_channel::<String>();
 		let share_server = Arc::clone(&server);
 		let share_server_conn = Arc::clone(&server);
-
-		{
+		/*tokio::spawn(async move{		
 			let mut buf = [0;1024];
 			match reader.read(&mut buf).await{
 				Ok(n) => {
 					let username = String::from_utf8_lossy(&buf[..n]);
+					println!("{}", username.clone());
 					share_server.lock().await.suscribe(username.to_string(), sender_tx.clone()).await;
 					println!("suscribed");		
 				},
 				Ok(0) => return,
 				Err(err) => return,
 			}
-		}
+		
+		});*/
+	
 		//Escucha la respuesta del cliente.
 		tokio::spawn(async move {
 			loop {
@@ -41,13 +42,22 @@ async fn start_server(){
 				}
 			}
 		});
-		
+
+		//Publica tus respuestas a tus suscriptores.
 		tokio::spawn(async move{
 			let mut buffer = [0; 1024];
-			loop{
+			let mut suscribe = false;
+			loop{				
 				match reader.read(&mut buffer).await{
 					Ok(0) => return,
 					Ok(n) => {
+						if !suscribe {
+							let username = String::from_utf8_lossy(&buffer[..n]);
+							println!("{}", username.clone());
+							share_server.lock().await.suscribe(username.to_string(), sender_tx.clone()).await;
+							println!("suscribed");
+							suscribe = true;
+						}
 						let input = String::from_utf8_lossy(&buffer[..n]);
 						share_server_conn.lock().await.publish(input.to_string()).await;
 						

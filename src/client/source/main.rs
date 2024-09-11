@@ -1,6 +1,7 @@
 use tokio::io::{self,BufReader,AsyncBufReadExt,AsyncReadExt, AsyncWriteExt, stdout};
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, Mutex};
+mod client;
 
 #[tokio::main]
 async fn main() {
@@ -25,9 +26,10 @@ async fn main() {
 			match rd.read(&mut buffer).await {
 				Ok(n) => {
 					let response = String::from_utf8_lossy(&buffer[..n]);
+					//println!("{}", response);
 					if !response.is_empty(){
-						print!("> {}", response);
-						io::stdout().flush().await;
+						println!("> {}", response);
+						tokio::io::stdout().flush().await;
 					}		
 				},
 				Ok(0) => return,
@@ -35,21 +37,26 @@ async fn main() {
 			}
 		}
 	});
-	println!("ENTER username: ");
-	print!("/r");
+	print!("ENTER username: ");
 	tokio::io::stdout().flush().await;
 	let mut stdin = io::stdin();
 	let mut reader = BufReader::new(stdin);
 	let mut buffer = String::new();
+
 	reader.read_line(&mut buffer).await;
 	let username = buffer.trim().to_string();
-	sender_tx.send(username.clone());
+	let mut client = client::Client::new(username);
+	sender_tx.send(client.send_identify());
+	
 	loop{
 		buffer.clear();
-		print!("> TYPE: ");
-		io::stdout().flush().await;
+		tokio::io::stdout().flush().await;
 		reader.read_line(&mut buffer).await;
-		let type_protocol = buffer.trim().to_string();
-		sender_tx.send(type_protocol);
+		let mut type_protocol = buffer.trim().to_string();
+		//Checa las diferentes formas de comunicarte en el chat.
+		if type_protocol.contains(">"){
+			type_protocol = type_protocol.replace(">", "");
+			sender_tx.send(client.send_pub_text(&mut type_protocol));
+		}
 	}
 }
