@@ -46,8 +46,8 @@ async fn start_server(){
 							println!("suscribed");
 							suscribe = true;
 						}else{
-						let input = String::from_utf8_lossy(&buffer[..n]);
-						share_server_conn.lock().await.publish(input.to_string()).await;
+							let input = String::from_utf8_lossy(&buffer[..n]);
+							share_server_conn.lock().await.publish(input.to_string(), sender_tx.clone()).await;
 						}
 					},
 					Err(e) => return,

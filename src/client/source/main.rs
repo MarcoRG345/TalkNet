@@ -52,11 +52,14 @@ async fn main() {
 		buffer.clear();
 		tokio::io::stdout().flush().await;
 		reader.read_line(&mut buffer).await;
-		let mut type_protocol = buffer.trim().to_string();
+		let mut type_protocol = buffer.trim();
+		let mut proccess_protocol = String::new();
 		//Checa las diferentes formas de comunicarte en el chat.
-		if type_protocol.contains(">"){
-			type_protocol = type_protocol.replace(">", "");
-			sender_tx.send(client.send_pub_text(&mut type_protocol));
+		if type_protocol.starts_with(">"){
+			proccess_protocol = type_protocol.replace(">", "").clone();
+			sender_tx.send(client.send_pub_text(&mut proccess_protocol));
+		}else if type_protocol.starts_with("all/"){
+			sender_tx.send(client.request_users());
 		}
 	}
 }

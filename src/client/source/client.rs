@@ -24,7 +24,12 @@ impl Client {
 		let json_str = serde_json::to_string(&json_data).unwrap();
 		json_str
 	}
-	
+
+	pub fn request_users(&self) -> String{
+		let json_data = types_msg::Types_msg::USERS;
+		let json_str = serde_json::to_string(&json_data).unwrap();
+		json_str
+	}
 	pub fn get_id(&self) -> &String{
 		&self.username
 	}

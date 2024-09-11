@@ -28,8 +28,12 @@ impl Server {
 		if !channels_key.contains_key(&key_username){
 			channels_key.insert(key_username.clone(), sender);
 			users_key.insert(key_username.clone(), "AWAY".to_string());
-		}else {
-			println!("Same cliente try to joined");
+		}else {;
+			let json_data = type_protocol::Type_protocol::RESPONSE {
+				request: "IDENTIFY".to_string(),
+				result: type_protocol::ResultType::USER_ALREADY_EXISTS,
+				extra: key_username.clone()
+			};
 		}
 	}
 	 fn get_id(request_protc: String) -> String{
@@ -40,11 +44,17 @@ impl Server {
 		}
 		id
 		
-	}
-	pub async fn publish(&self, username: String){
+	 }
+	//Entry point.
+	pub async fn publish(&self, general_protocol: String, current_sender: UnboundedSender<String>){
 		let mut channels_key = self.suscribers.lock().await;
+		let json_data = general_protocol.clone();
+		if json_data.contains("USERS"){
+			let users_list = self.response_users().await;
+			current_sender.send(users_list);
+		}
 		for (_key, senders) in channels_key.iter_mut(){
-			senders.send(username.clone().trim().replace("\n", "n"));
+			senders.send(general_protocol.clone().trim().replace("\n", ""));
 		}
 	}
 	pub async fn response_indentify(&self, user_key: String){
@@ -63,5 +73,13 @@ impl Server {
 		for (_key, senders) in channels_key.iter_mut(){
 			senders.send(json_str_clients.clone().trim().replace("\n", "n"));
 		}	
+	}
+	async fn response_users(&self) -> String{
+		let mut users_key = self.users.lock().await;
+		let json_data = type_protocol::Type_protocol::USER_LIST{
+			users: users_key.clone() 	
+		};
+		let json_str = serde_json::to_string(&json_data).unwrap();
+		json_str
 	}
 }
