@@ -18,20 +18,6 @@ async fn start_server(){
 		let (sender_tx, mut reciver_rx) = mpsc::unbounded_channel::<String>();
 		let share_server = Arc::clone(&server);
 		let share_server_conn = Arc::clone(&server);
-		/*tokio::spawn(async move{		
-			let mut buf = [0;1024];
-			match reader.read(&mut buf).await{
-				Ok(n) => {
-					let username = String::from_utf8_lossy(&buf[..n]);
-					println!("{}", username.clone());
-					share_server.lock().await.suscribe(username.to_string(), sender_tx.clone()).await;
-					println!("suscribed");		
-				},
-				Ok(0) => return,
-				Err(err) => return,
-			}
-		
-		});*/
 	
 		//Escucha la respuesta del cliente.
 		tokio::spawn(async move {
@@ -52,15 +38,17 @@ async fn start_server(){
 					Ok(0) => return,
 					Ok(n) => {
 						if !suscribe {
-							let username = String::from_utf8_lossy(&buffer[..n]);
-							println!("{}", username.clone());
-							share_server.lock().await.suscribe(username.to_string(), sender_tx.clone()).await;
+							let request_id = String::from_utf8_lossy(&buffer[..n]);
+							println!("{}", request_id.clone());
+							let unlocked_server = share_server.lock().await;
+							unlocked_server.suscribe(request_id.clone().to_string(), sender_tx.clone()).await;
+							unlocked_server.response_indentify(request_id.clone().to_string()).await;
 							println!("suscribed");
 							suscribe = true;
-						}
+						}else{
 						let input = String::from_utf8_lossy(&buffer[..n]);
 						share_server_conn.lock().await.publish(input.to_string()).await;
-						
+						}
 					},
 					Err(e) => return,
 				}
