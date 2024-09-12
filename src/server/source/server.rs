@@ -30,7 +30,7 @@ impl Server {
 		if !channels_key.contains_key(&key_username){
 			channels_key.insert(key_username.clone(), sender.clone());
 			users_key.insert(key_username.clone(), "AWAY".to_string());
-		}else {;
+		}else {
 			let json_data = type_protocol::Type_protocol::RESPONSE {
 				request: "IDENTIFY".to_string(),
 				result: type_protocol::ResultType::USER_ALREADY_EXISTS,
