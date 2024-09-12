@@ -3,6 +3,8 @@ use std::sync::{Arc};
 use tokio::io::{self, AsyncWriteExt, AsyncReadExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex};
+use uuid::Uuid;
+
 #[tokio::main]
 async fn main() {
     println!("Server started...");
@@ -33,6 +35,9 @@ async fn start_server(){
 		tokio::spawn(async move{
 			let mut buffer = [0; 1024];
 			let mut suscribe = false;
+			let auth = Uuid::new_v4();
+			let mut has_auth = false;
+			let mut  id = String::new();
 			loop{				
 				match reader.read(&mut buffer).await{
 					Ok(0) => return,
@@ -45,9 +50,16 @@ async fn start_server(){
 							unlocked_server.response_indentify(request_id.clone().to_string()).await;
 							println!("suscribed");
 							suscribe = true;
-						}else{
+							id = request_id.clone().to_string();
+						}
+						else{
 							let input = String::from_utf8_lossy(&buffer[..n]);
-							share_server_conn.lock().await.publish(input.to_string(), sender_tx.clone()).await;
+							if !has_auth{
+								let unlocked_server = share_server.lock().await;
+								unlocked_server.suscribe_auth(auth.to_string(), id.to_string()).await;
+								has_auth = true;
+							}
+							share_server_conn.lock().await.publish(auth.to_string(), input.to_string(), sender_tx.clone()).await;
 						}
 					},
 					Err(e) => return,

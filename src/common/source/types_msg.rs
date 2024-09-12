@@ -7,7 +7,7 @@ pub enum Types_msg {
     IDENTIFY {username: String},
     STATUS { status: String},
     USERS,
-    TEXT,
+    TEXT {username: String, text: String},
     PUBLIC_TEXT { text: String},
     NEW_ROOM,
     INVITE,

@@ -7,6 +7,7 @@ use std::collections::HashMap;
 pub enum ResultType{
 	SUCCESS,
 	USER_ALREADY_EXISTS,
+	NO_SUCH_USER,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -14,5 +15,7 @@ pub enum ResultType{
 pub enum Type_protocol{
 	RESPONSE {request: String, result: ResultType, extra: String},
 	NEW_USER {username: String},
-	USER_LIST{users: HashMap<String, String>},	
+	USER_LIST{users: HashMap<String, String>},
+	PUBLIC_TEXT_FROM {username: String, text: String},
+	TEXT_FROM {username: String, text: String},
 }

@@ -9,7 +9,6 @@ async fn main() {
 	let (mut rd, mut writer) = io::split(stream);
 	let (sender_tx, mut receiver_rx) = mpsc::unbounded_channel::<String>();
 	let (server_tx, mut server_rx) = mpsc::unbounded_channel::<String>();
-	let mut  register = false;
 	//while receiver_rx en mi propio canal se lo envio
 	//simula que llego del servidor.
 	tokio::spawn(async move {
@@ -37,6 +36,7 @@ async fn main() {
 			}
 		}
 	});
+	
 	print!("ENTER username: ");
 	tokio::io::stdout().flush().await;
 	let mut stdin = io::stdin();
@@ -48,6 +48,7 @@ async fn main() {
 	let mut client = client::Client::new(username);
 	sender_tx.send(client.send_identify());
 	
+	//a partir de aqui va poder enviar su auth.
 	loop{
 		buffer.clear();
 		tokio::io::stdout().flush().await;
@@ -60,6 +61,15 @@ async fn main() {
 			sender_tx.send(client.send_pub_text(&mut proccess_protocol));
 		}else if type_protocol.starts_with("all/"){
 			sender_tx.send(client.request_users());
+		}else if type_protocol.starts_with("txfrom/"){
+			proccess_protocol = type_protocol.replace("txfrom/", "").clone();
+			let cut_protoc = proccess_protocol.find('/').unwrap_or(proccess_protocol.len());
+			let mut id_name: String = proccess_protocol.drain(..cut_protoc).collect();
+			id_name = id_name.trim().replace(" ", "");
+			//println!("{}", id_name);
+			let mut priv_text = proccess_protocol.replace("/", "");
+			//println!("{}", priv_text);
+			sender_tx.send(client.send_priv_text(priv_text.to_string(), id_name));
 		}
 	}
 }

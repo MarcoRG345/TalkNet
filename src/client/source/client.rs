@@ -30,6 +30,16 @@ impl Client {
 		let json_str = serde_json::to_string(&json_data).unwrap();
 		json_str
 	}
+	
+	pub fn send_priv_text(&self, priv_text: String, id_name: String) -> String{
+		let json_data = types_msg::Types_msg::TEXT{
+			username: id_name,
+			text: priv_text.to_string()
+		};
+		let json_str = serde_json::to_string(&json_data).unwrap();
+		json_str
+	}
+	
 	pub fn get_id(&self) -> &String{
 		&self.username
 	}
