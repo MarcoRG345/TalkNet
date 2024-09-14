@@ -5,12 +5,16 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex, mpsc::Sender, mpsc::UnboundedSender};
 use std::{collections::HashMap, sync::Arc};
-
+//mod room; // Declarar el módulo `room`
+use crate::room::Room; 
 pub struct Server {
     users: Arc<Mutex<HashMap<String, String>>>,
-	//Sender de los clientes son estos.
+	//HashMap of username to channel.
 	suscribers: Arc<Mutex<HashMap<String, UnboundedSender<String>>>>,
+	//HashMap of uuid_auth to username.
 	current_users: Arc<Mutex<HashMap<String, String>>>,
+	//
+	current_rooms: Arc<Mutex<HashMap<String, Room>>>,
 }
 
 impl Server {	
@@ -20,6 +24,7 @@ impl Server {
             users: users_name_satus,
 			suscribers: Arc::new(Mutex::new(HashMap::new())),
 			current_users: Arc::new(Mutex::new(HashMap::new())),
+			current_rooms: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 	
@@ -30,14 +35,21 @@ impl Server {
 		if !channels_key.contains_key(&key_username){
 			channels_key.insert(key_username.clone(), sender.clone());
 			users_key.insert(key_username.clone(), "AWAY".to_string());
-		}else {
-			let json_data = type_protocol::Type_protocol::RESPONSE {
-				request: "IDENTIFY".to_string(),
-				result: type_protocol::ResultType::USER_ALREADY_EXISTS,
-				extra: key_username.clone()
-			};
+		}else{
+			self.deny_indentify(request_protc, sender);
 		}
 	}
+	
+	pub fn deny_indentify(&self, protocol: String, channel: UnboundedSender<String>){
+		let id = Self::get_id(protocol.clone().to_string());
+		let json_data = type_protocol::Type_protocol::RESPONSE {
+				operation: "IDENTIFY".to_string(),
+				result: type_protocol::ResultType::USER_ALREADY_EXISTS,
+				extra: id.clone()
+			};
+			let json_str = serde_json::to_string(&json_data).unwrap();
+			channel.send(json_str);
+		}	
 	
 	 fn get_id(request_protc: String) -> String{
 		let json_data: types_msg::Types_msg = serde_json::from_str(request_protc.as_str()).unwrap();
@@ -84,24 +96,34 @@ impl Server {
 				senders.send(pub_value.clone());
 			}
 		}
+		else if json_data.contains("NEW_ROOM"){
+			let mut json_data = self.response_room(current_auth, general_protocol, current_sender.clone()).await;
+			current_sender.send(json_data.clone());
+		} else if json_data.contains("INVITE") || json_data.contains("JOIN_ROOM") {
+			let json_data = serde_json::from_str(&general_protocol).unwrap();
+			self.handle_room(json_data, current_auth).await;
+		}
 		
 	}
 	pub async fn response_indentify(&self, user_key: String){
 		let id = Self::get_id(user_key.to_string());
 		let json_data = type_protocol::Type_protocol::RESPONSE {
-			request: "IDENTIFY".to_string(),
+			operation: "IDENTIFY".to_string(),
 			result: type_protocol::ResultType::SUCCESS,
 			extra: id.clone()
 		};
 		let response_all = type_protocol::Type_protocol::NEW_USER{
 			username: id.clone()
 		};
+
 		let mut channels_key = self.suscribers.lock().await;
 		let json_str_server = serde_json::to_string(&json_data).unwrap();
 		let json_str_clients = serde_json::to_string(&response_all).unwrap();
 		for (_key, senders) in channels_key.iter_mut(){
 			senders.send(json_str_clients.clone().trim().replace("\n", "n"));
-		}	
+		}
+		
+		
 	}
 	
 	async fn response_users(&self) -> String{
@@ -149,15 +171,154 @@ impl Server {
 				text: texting.to_string()
 			};
 			json_str = serde_json::to_string(&json_data).unwrap();
+			println!("{}", json_str.to_string());
 		}else{
 			//None user, or username incorrect.
 			let json_data = type_protocol::Type_protocol::RESPONSE{
-				request: "TEXT".to_string(),
+				operation: "TEXT".to_string(),
 				result: type_protocol::ResultType::NO_SUCH_USER,
 				extra: id_name.to_string()
 			};
 			json_str = serde_json::to_string(&json_data).unwrap();
 		}
 		json_str
+	}
+	async fn response_room(&self, auth: String, general_protocol: String, sender: UnboundedSender<String>) -> String{
+		let new_room = Room::new();
+		let channels_key = self.suscribers.lock().await;
+		let current_users_key = self.current_users.lock().await;
+		let mut current_rooms_key = self.current_rooms.lock().await;
+		
+		let username = current_users_key.get(&auth).unwrap();
+		let json_serialize: types_msg::Types_msg = serde_json::from_str(&general_protocol).unwrap();
+		let mut room_name = String::new();
+		
+		if let types_msg::Types_msg::NEW_ROOM {roomname } = json_serialize{
+			room_name = roomname.to_string();
+		}
+
+		let mut json_str_data = String::new();
+		if !current_rooms_key.contains_key(&room_name){
+			new_room.add_user(username.to_string(), sender.clone()).await;
+			new_room.suscribe_me(username.to_string(), room_name.clone()).await;
+			current_rooms_key.insert(room_name.clone(), new_room);
+			let json_serialize = type_protocol::Type_protocol::RESPONSE{
+				operation: "NEW_ROOM".to_string(),
+				result: type_protocol::ResultType::SUCCESS,
+				extra: room_name
+			};
+			json_str_data = serde_json::to_string(&json_serialize).unwrap();
+		}else{
+			let json_serialize = type_protocol::Type_protocol::RESPONSE{
+				operation: "NEW_ROOM".to_string(),
+				result: type_protocol::ResultType::ROOM_ALREADY_EXISTS,
+				extra: room_name
+			};
+			json_str_data = serde_json::to_string(&json_serialize).unwrap();
+		}
+		json_str_data
+	}
+
+	async fn handle_room(&self, type_room: types_msg::Types_msg, current_auth: String){
+		if let types_msg::Types_msg::INVITE{roomname, usernames} = type_room{
+			let current_users_key = self.current_users.lock().await;
+			let room_name = roomname.to_string();
+			let current_user = current_users_key.get(&current_auth).unwrap().to_string();
+			self.manage_invite(room_name.clone(), current_user.clone(), usernames).await;	
+		}else if let types_msg::Types_msg::JOIN_ROOM{roomname} = type_room{
+			let current_users_key = self.current_users.lock().await;
+			let current_user = current_users_key.get(&current_auth).unwrap().to_string();
+			let room_name = roomname.to_string();
+			self.manage_join(current_user.clone(), room_name.clone()).await;
+		}
+	}
+
+	async fn manage_invite(&self, room_name: String, current_user: String, usernames: Vec<String>){
+		//let room_name = roomname.to_string();
+		let mut json_str = String::new();
+		let mut channels_key = self.suscribers.lock().await;
+		let mut current_rooms_key = self.current_rooms.lock().await;
+			let err_room_invited = type_protocol::Type_protocol::RESPONSE{
+				operation: "INVITE".to_string(),
+				result: type_protocol::ResultType::NO_SUCH_ROOM,
+				extra: room_name.clone()
+			};
+			let current_sender = channels_key.get(&current_user).unwrap();
+			if current_rooms_key.contains_key(&room_name){
+				let room = current_rooms_key.get(&room_name).unwrap();
+				
+				if room.is_invited(current_user.clone()).await{}{
+					let json_data = type_protocol::Type_protocol::INVITATION{
+						username: current_user.clone(),
+						roomname: room_name.clone()	
+					};
+					json_str = serde_json::to_string(&json_data).unwrap();
+					
+					for user in &usernames {
+						if !channels_key.contains_key(&user.clone()){
+							//userno exists
+							let err_json = type_protocol::Type_protocol::RESPONSE{
+								operation:"INVITE".to_string(),
+								result: type_protocol::ResultType::NO_SUCH_USER,
+								extra: user.clone()
+							};
+							json_str = serde_json::to_string(&err_json).unwrap();
+							current_sender.send(json_str.clone());
+						}else{
+							room.suscribe_me(user.clone(), room_name.clone()).await;
+							let sender = channels_key.get(user).unwrap();
+							println!("{}", json_str.clone());
+							sender.send(json_str.clone());
+						}
+					}
+				}
+			}else{
+				json_str = serde_json::to_string(&err_room_invited).unwrap();
+				println!("{}", json_str.clone());
+				current_sender.send(json_str.clone());
+			}
+	}
+	async fn manage_join(&self, current_user: String, room_name: String){
+		let mut current_rooms_key = self.current_rooms.lock().await;
+		let mut channels_key = self.suscribers.lock().await;
+		//la sala existe o no existe.
+		if current_rooms_key.contains_key(&room_name){
+			let room = current_rooms_key.get(&room_name).unwrap();
+			if room.is_invited_into(current_user.clone(), room_name.clone()).await{
+				let sender = channels_key.get(&current_user).unwrap();
+				let json_data = type_protocol::Type_protocol::RESPONSE{
+					operation: "JOIN_ROOM".to_string(),
+					result: type_protocol::ResultType::SUCCESS,
+					extra: room_name.clone()
+				};
+				let mut  json_str = serde_json::to_string(&json_data).unwrap();
+				sender.send(json_str.clone());
+				let json_advice = type_protocol::Type_protocol::JOINED_ROOM{
+					roomname: room_name.clone(),
+					username: current_user.clone()
+				};
+				room.add_user(current_user.clone(), sender.clone()).await;
+				json_str = serde_json::to_string(&json_advice).unwrap();
+				room.publish_room(json_str.clone(), current_user.clone()).await;
+			}else{
+				let err_json = type_protocol::Type_protocol::RESPONSE{
+					operation: "JOIN_ROOM".to_string(),
+					result: type_protocol::ResultType::NOT_INVITED,
+					extra: room_name.clone()
+				};
+				let err_json_str = serde_json::to_string(&err_json).unwrap();
+				let sender = channels_key.get(&current_user).unwrap();
+				sender.send(err_json_str.clone());
+			}
+		}else{
+			let err_json = type_protocol::Type_protocol::RESPONSE{
+				operation: "JOIN_ROOM".to_string(),
+				result: type_protocol::ResultType::NO_SUCH_ROOM,
+				extra: room_name.clone()
+			};
+			let err_json_str = serde_json::to_string(&err_json).unwrap();
+			let sender = channels_key.get(&current_user).unwrap();
+			sender.send(err_json_str.clone());
+		}
 	}
 }

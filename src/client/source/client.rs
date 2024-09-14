@@ -1,5 +1,6 @@
 use common::types_msg;
 use std::net::TcpStream;
+use common::type_protocol;
 pub struct Client {
 	username: String,
 	status: String,
@@ -43,4 +44,26 @@ impl Client {
 	pub fn get_id(&self) -> &String{
 		&self.username
 	}
+	pub fn request_new_room(&self, room_name: String) -> String{
+		let json_data = types_msg::Types_msg::NEW_ROOM{
+			roomname: room_name
+		};
+		serde_json::to_string(&json_data).unwrap()
+	}
+	pub fn send_room_bid(&self, room_name: String, user_names: Vec<String>) -> String{
+		let json_data = types_msg::Types_msg::INVITE{
+			roomname: room_name,
+			usernames: user_names
+		};
+		serde_json::to_string(&json_data).unwrap()
+	}
+	
+	pub fn join_room(&self, room_name: String) -> String{
+		let json_data = types_msg::Types_msg::JOIN_ROOM{
+			roomname: room_name
+		};
+		serde_json::to_string(&json_data).unwrap()
+	}
+	
 }
+

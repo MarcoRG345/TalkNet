@@ -4,7 +4,8 @@ use tokio::io::{self, AsyncWriteExt, AsyncReadExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex};
 use uuid::Uuid;
-
+mod room; // Declarar el módulo `room`
+//use room::Room; 
 #[tokio::main]
 async fn main() {
     println!("Server started...");
@@ -16,6 +17,7 @@ async fn start_server(){
 	let server = Arc::new(Mutex::new(server::Server::new()));
 	loop{
 		let (mut stream, addr) = listener.accept().await.unwrap();
+		println!("cliente conectado");
 		let (mut reader, mut writer) = io::split(stream);
 		let (sender_tx, mut reciver_rx) = mpsc::unbounded_channel::<String>();
 		let share_server = Arc::clone(&server);
@@ -25,7 +27,6 @@ async fn start_server(){
 		tokio::spawn(async move {
 			loop {
 				if let Some(message) = reciver_rx.recv().await{
-					println!("envio respuesta");
 					writer.write_all(message.as_bytes()).await;
 				}
 			}
@@ -44,11 +45,10 @@ async fn start_server(){
 					Ok(n) => {
 						if !suscribe {
 							let request_id = String::from_utf8_lossy(&buffer[..n]);
-							println!("{}", request_id.clone());
 							let unlocked_server = share_server.lock().await;
 							unlocked_server.suscribe(request_id.clone().to_string(), sender_tx.clone()).await;
+							
 							unlocked_server.response_indentify(request_id.clone().to_string()).await;
-							println!("suscribed");
 							suscribe = true;
 							id = request_id.clone().to_string();
 						}
