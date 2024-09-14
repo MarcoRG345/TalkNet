@@ -71,6 +71,13 @@ impl Client {
 		};
 		serde_json::to_string(&json_data).unwrap()
 	}
+	pub fn room_text(&self,room_name: String, text_: String) -> String{
+		let json_data = types_msg::Types_msg::ROOM_TEXT{
+			roomname: room_name,
+			text: text_
+		};
+		serde_json::to_string(&json_data).unwrap()
+	}
 	
 }
 

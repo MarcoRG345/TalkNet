@@ -24,5 +24,6 @@ pub enum Type_protocol{
 	TEXT_FROM {username: String, text: String},
 	INVITATION {username: String, roomname: String},
 	JOINED_ROOM{roomname: String, username: String},
-	ROOM_USER_LIST{roomname: String, users: HashMap<String, String>}
+	ROOM_USER_LIST{roomname: String, users: HashMap<String, String>},
+	ROOM_TEXT_FROM{roomname: String, username: String, text: String},
 }

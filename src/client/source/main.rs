@@ -85,17 +85,25 @@ async fn main() {
 			proccess_protocol = type_protocol.replace("JOIN/", "").clone();
 			proccess_protocol = proccess_protocol.trim().to_string();
 			sender_tx.send(client.join_room(proccess_protocol.clone()));
+			
 		}else if type_protocol.starts_with("ROOM_CONTENT/"){
 			proccess_protocol = type_protocol.replace("ROOM_CONTENT/", "").clone();
 			proccess_protocol = proccess_protocol.trim().to_string();
 			sender_tx.send(client.room_users(proccess_protocol.clone()));
+		}else if type_protocol.starts_with("TX_ROOM/"){
+			proccess_protocol = type_protocol.replace("TX_ROOM/", "").clone();
+			let cut_protoc = proccess_protocol.find('/').unwrap_or(proccess_protocol.len());
+			let mut room_name: String = proccess_protocol.drain(..cut_protoc).collect();
+			room_name = room_name.trim().replace(" ", "");
+			let mut room_text = proccess_protocol.replace("/", "");
+			sender_tx.send(client.room_text(room_name.clone(), room_text.clone()));
 		}
 	}
 }
 pub mod responses{
 	use super::*;
 pub fn type_response(response: String){
-	println!("{}", response);
+	let json_response = serde_json::from_str(&response).unwrap();
 	if let type_protocol::Type_protocol::RESPONSE{operation, result, extra} = json_response{
 		if operation.to_string() == "IDENTFY".to_string(){
 			println!(" -> was indentificate: {}", extra.to_string());
@@ -137,6 +145,8 @@ pub fn type_response(response: String){
 		for (user, status) in users{
 			println!("ROOM -> username -- {} -- status: {}", user, status);
 		}
+	} else if let type_protocol::Type_protocol::ROOM_TEXT_FROM{roomname, username, text} = json_response{
+		println!("> {}: {} -> {}", roomname, username, text);
 	}
 	}
 }

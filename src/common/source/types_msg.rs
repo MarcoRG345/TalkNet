@@ -13,7 +13,7 @@ pub enum Types_msg {
     INVITE {roomname: String, usernames: Vec<String>},
     JOIN_ROOM{roomname: String},
     ROOM_USERS {roomname: String},
-    ROOM_TEXT,
+    ROOM_TEXT {roomname: String, text: String},
     LEAVE_ROOM,
     DISCONNECT,
 }
