@@ -85,20 +85,34 @@ async fn main() {
 			proccess_protocol = type_protocol.replace("JOIN/", "").clone();
 			proccess_protocol = proccess_protocol.trim().to_string();
 			sender_tx.send(client.join_room(proccess_protocol.clone()));
+		}else if type_protocol.starts_with("ROOM_CONTENT/"){
+			proccess_protocol = type_protocol.replace("ROOM_CONTENT/", "").clone();
+			proccess_protocol = proccess_protocol.trim().to_string();
+			sender_tx.send(client.room_users(proccess_protocol.clone()));
 		}
 	}
 }
 pub mod responses{
 	use super::*;
 pub fn type_response(response: String){
-	let json_response = serde_json::from_str(&response).unwrap();
+	println!("{}", response);
 	if let type_protocol::Type_protocol::RESPONSE{operation, result, extra} = json_response{
 		if operation.to_string() == "IDENTFY".to_string(){
-			println!("was indentificate: {}", extra.to_string());
+			println!(" -> was indentificate: {}", extra.to_string());
+		}else if operation.to_string() == "ROOM_USERS".to_string() && result == type_protocol::ResultType::NOT_JOINED{
+			eprintln!("-- you not have in this room --");
+		}else if operation.to_string() == "NEW_ROOM".to_string() && result == type_protocol::ResultType::SUCCESS{
+			println!("--------------------------------------------------------");
+			println!("> Currently you created the -- {} -- room ", extra.to_string());
+			println!("--------------------------------------------------------");
+		}else if operation.to_string() == "JOIN_ROOM".to_string() && result == type_protocol::ResultType::SUCCESS{
+			println!("--------------------------------------------------------");
+			println!("> Currently you joined in the -- {} -- room ", extra.to_string());
+			println!("--------------------------------------------------------");	
 		}
 	}
 	else if let type_protocol::Type_protocol::NEW_USER{username} = json_response{
-		println!("{} was joined to the general chat", username.clone());
+		println!("> {} was joined to the general chat", username.clone());
 	}else if let type_protocol::Type_protocol::TEXT_FROM{ username, text} = json_response{
 		println!("> FROM: {} --> {}", username.to_string(), text.to_string())
 	}else if let type_protocol::Type_protocol::PUBLIC_TEXT_FROM{ username, text} = json_response{
@@ -107,7 +121,7 @@ pub fn type_response(response: String){
 	}else if let type_protocol::Type_protocol::USER_LIST{ users} = json_response{
 		println!("all theese clients ------> " );
 		for (user, status) in users.iter(){
-			println!("{user} -> status {status}");
+			println!("> {user} -> status: {status}");
 		}
 	}
 	else if let type_protocol::Type_protocol::INVITATION{username, roomname} = json_response{
@@ -115,8 +129,14 @@ pub fn type_response(response: String){
 	}
 	else if let type_protocol::Type_protocol::JOINED_ROOM{roomname, username} = json_response{
 		println!("--------------------------------------------------------");
-		println!("> Currently {} are in the {} room ", username,roomname);
+		println!("> Currently {} are in the -- {} -- room ", username,roomname);
 		println!("--------------------------------------------------------");
+	}
+	else if let type_protocol::Type_protocol::ROOM_USER_LIST{ roomname, users} = json_response{
+		println!("Current users in the -- {} -- room ->> ", roomname);
+		for (user, status) in users{
+			println!("ROOM -> username -- {} -- status: {}", user, status);
+		}
 	}
 	}
 }

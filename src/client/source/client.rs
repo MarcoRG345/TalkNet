@@ -64,6 +64,13 @@ impl Client {
 		};
 		serde_json::to_string(&json_data).unwrap()
 	}
+
+	pub fn room_users(&self, room_name: String) ->String{
+		let json_data = types_msg::Types_msg::ROOM_USERS{
+			roomname: room_name
+		};
+		serde_json::to_string(&json_data).unwrap()
+	}
 	
 }
 

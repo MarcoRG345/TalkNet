@@ -11,6 +11,7 @@ pub enum ResultType{
 	ROOM_ALREADY_EXISTS,
 	NO_SUCH_ROOM,
 	NOT_INVITED,
+	NOT_JOINED,
 }
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -23,4 +24,5 @@ pub enum Type_protocol{
 	TEXT_FROM {username: String, text: String},
 	INVITATION {username: String, roomname: String},
 	JOINED_ROOM{roomname: String, username: String},
+	ROOM_USER_LIST{roomname: String, users: HashMap<String, String>}
 }

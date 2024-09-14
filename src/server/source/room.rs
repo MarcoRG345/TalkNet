@@ -56,5 +56,9 @@ impl Room{
 			}
 		} 
 	}
+	pub async fn is_in_room(&self, username: String)-> bool{
+		let room_users = self.room_users.lock().await;
+		if room_users.contains_key(&username) {return true} else {return false} 
+	}
 	
 }

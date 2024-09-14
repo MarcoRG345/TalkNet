@@ -68,7 +68,7 @@ impl Server {
 	pub async fn publish(&self, current_auth:String, general_protocol: String, current_sender: UnboundedSender<String>){
 		let json_data = general_protocol.clone();
 		
-		if json_data.contains("USERS"){
+		if json_data.contains("USERS") && !json_data.contains("ROOM"){
 			let users_list = self.response_users().await;
 			current_sender.send(users_list);
 			
@@ -99,7 +99,7 @@ impl Server {
 		else if json_data.contains("NEW_ROOM"){
 			let mut json_data = self.response_room(current_auth, general_protocol, current_sender.clone()).await;
 			current_sender.send(json_data.clone());
-		} else if json_data.contains("INVITE") || json_data.contains("JOIN_ROOM") {
+		}else {
 			let json_data = serde_json::from_str(&general_protocol).unwrap();
 			self.handle_room(json_data, current_auth).await;
 		}
@@ -230,6 +230,11 @@ impl Server {
 			let current_user = current_users_key.get(&current_auth).unwrap().to_string();
 			let room_name = roomname.to_string();
 			self.manage_join(current_user.clone(), room_name.clone()).await;
+		}else if let types_msg::Types_msg::ROOM_USERS{roomname} = type_room{
+			let current_users_key = self.current_users.lock().await;
+			let current_user = current_users_key.get(&current_auth).unwrap().to_string();
+			let room_name = roomname.to_string();
+			self.manage_room_users(current_user.clone(), room_name.clone()).await;
 		}
 	}
 
@@ -319,6 +324,50 @@ impl Server {
 			let err_json_str = serde_json::to_string(&err_json).unwrap();
 			let sender = channels_key.get(&current_user).unwrap();
 			sender.send(err_json_str.clone());
+		}
+	}
+	async fn manage_room_users(&self, current_user: String, room_name: String){
+		let current_rooms_key = self.current_rooms.lock().await;
+		let mut channels_key = self.suscribers.lock().await;
+		let users_status = self.users.lock().await;
+		if !current_rooms_key.contains_key(&room_name){
+			let json_data = type_protocol::Type_protocol::RESPONSE{
+				operation: "ROOM_USERS".to_string(),
+				result: type_protocol::ResultType::NO_SUCH_ROOM,
+				extra: room_name.to_string()
+			};
+			let json_str = serde_json::to_string(&json_data).unwrap();
+			let sender = channels_key.get(&current_user).unwrap();
+			sender.send(json_str.clone());
+		}else if current_rooms_key.contains_key(&room_name){
+			let room = current_rooms_key.get(&room_name).unwrap();
+			let mut  temp_HashMap: HashMap<String, String> = HashMap::new();
+			for (user, status) in users_status.iter(){
+				let us = user.to_string();
+				if room.is_in_room(user.to_string()).await{
+					temp_HashMap.insert(us, status.to_string());
+				}
+			}
+			if room.is_in_room(current_user.clone()).await{
+				let json_data = type_protocol::Type_protocol::ROOM_USER_LIST{
+					roomname: room_name.clone(),
+					users: temp_HashMap
+				};
+				let json_str = serde_json::to_string(&json_data).unwrap();
+				let sender = channels_key.get(&current_user).unwrap();
+				sender.send(json_str);	
+			}
+			else{
+			let json_data = type_protocol::Type_protocol::RESPONSE{
+				operation: "ROOM_USERS".to_string(),
+				result: type_protocol::ResultType::NOT_JOINED,
+				extra: room_name.clone()
+			};
+			let json_str = serde_json::to_string(&json_data).unwrap();
+			println!("{}", json_str.clone());
+			let sender = channels_key.get(&current_user).unwrap();
+			sender.send(json_str);
+		} 
 		}
 	}
 }
