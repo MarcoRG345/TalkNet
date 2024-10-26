@@ -8,7 +8,21 @@ mod client;
 use common::{type_protocol, types_msg};
 #[tokio::main]
 async fn main() {
-	let mut stream = TcpStream::connect("127.0.0.1:8001").await.unwrap();
+	let mut stream_option: Option<TcpStream> = None;
+	while let None = stream_option{
+		print!("ENTER the IPv4 address and PORT connection (example 127.0.0.1:8001): ");
+		std::io::stdout().flush();
+		let mut buffer = String::new();
+		std::io::stdin().read_line(&mut buffer).unwrap();
+		let ipv4addr = buffer.trim().to_string();
+	
+		stream_option = match TcpStream::connect(&ipv4addr).await{
+			Ok(bind) => Some(bind),
+			Err(_) => {eprintln!("Try again with a valid IPv4 address, ensure the server is turn on\nTo exit press Ctrl-c"); None},
+		};
+	}
+	
+	let mut stream = stream_option.unwrap();
 	let (mut rd, mut writer) = io::split(stream);
 	let (sender_tx, mut receiver_rx) = mpsc::unbounded_channel::<String>();
 	tokio::spawn(async move {
