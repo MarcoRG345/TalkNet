@@ -1,9 +1,9 @@
-# chat_zone
+## A real time chat client/server
+# Description
 <Author: Marco Antonio Raya Garcia>
 <Mail: tonyrayagarcia@gmail.com>
-
-Implementation real time chat aplication Client/Server. This project is interactive, using concepts of concurrency and threads this could be possible
-The implementation consists in two big parts and one most important, the server. The object server has two threads for manage multiple clients that connect 
+Implementation real time chat aplication Client/Server. This project is interactive, using concepts of concurrency and threads this could be possible.
+The implementation consists in two big parts and one most important. The server, the object server has two threads for manage multiple clients that connect 
 with it through <sockets> and request-response at the same time.
 # Protocol
 The stream protocol it was worked with JSON,it should be noted that a lot of lenguages work with libraries to serialize and deserialize data in a JSON format.
