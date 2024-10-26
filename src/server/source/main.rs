@@ -4,6 +4,7 @@ use tokio::io::{self, AsyncWriteExt, AsyncReadExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex};
 use uuid::Uuid;
+use std::io::Write;
 mod room; // Declarar el módulo `room`
 //use room::Room; 
 #[tokio::main]
@@ -13,7 +14,12 @@ async fn main() {
 }
 
 async fn start_server(){
-	let listener = TcpListener::bind("127.0.0.1:8001").await.unwrap();
+	print!("ENTER the IPv4 address and PORT (example 127.0.0.1:8001): ");
+	std::io::stdout().flush();
+	let mut buffer = String::new();
+	std::io::stdin().read_line(&mut buffer).unwrap();
+	let ipv4addr = buffer.trim().to_string();
+	let listener = TcpListener::bind(&ipv4addr).await.unwrap();
 	let server = Arc::new(Mutex::new(server::Server::new()));
 	loop{
 		let (mut stream, addr) = listener.accept().await.unwrap();

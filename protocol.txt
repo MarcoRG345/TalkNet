@@ -1,0 +1,398 @@
+Messages Received by the Server
+IDENTIFY
+
+Identifies a user on the server:
+
+json
+
+{ "type": "IDENTIFY",
+  "username": "Kimberly" }
+
+On success, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "IDENTIFY",
+  "result": "SUCCESS",
+  "extra": "Kimberly" }
+
+The server also sends a NEW_USER message to other connected clients:
+
+json
+
+{ "type": "NEW_USER",
+  "username": "Kimberly" }
+
+If the username is already in use, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "IDENTIFY",
+  "result": "USER_ALREADY_EXISTS",
+  "extra": "Kimberly" }
+
+STATUS
+
+Changes a user’s status:
+
+json
+
+{ "type": "STATUS",
+  "status": "AWAY" }
+
+If the status is successfully updated, the server sends a NEW_STATUS message to other connected clients:
+
+json
+
+{ "type": "NEW_STATUS",
+  "username": "Kimberly",
+  "status": "AWAY" }
+
+TEXT
+
+Sends a private message to a user:
+
+json
+
+{ "type": "TEXT",
+  "username": "Luis",
+  "text": "Hi Luis, how are you?" }
+
+If the recipient exists, the server sends the TEXT_FROM message to the recipient:
+
+json
+
+{ "type": "TEXT_FROM",
+  "username": "Kimberly",
+  "text": "Hi Luis, how are you?" }
+
+If the recipient does not exist, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "TEXT",
+  "result": "NO_SUCH_USER",
+  "extra": "Luis" }
+
+PUBLIC_TEXT
+
+Sends a public message to all connected users:
+
+json
+
+{ "type": "PUBLIC_TEXT",
+  "text": "Hello everyone!" }
+
+The server does not respond but sends the PUBLIC_TEXT_FROM message to all other users in the chat:
+
+json
+
+{ "type": "PUBLIC_TEXT_FROM",
+  "username": "Kimberly",
+  "text": "Hello everyone!" }
+
+NEW_ROOM
+
+Creates a chat room:
+
+json
+
+{ "type": "NEW_ROOM",
+  "roomname": "Room 1" }
+
+On success, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "NEW_ROOM",
+  "result": "SUCCESS",
+  "extra": "Room 1" }
+
+If the room name is already taken, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "NEW_ROOM",
+  "result": "ROOM_ALREADY_EXISTS",
+  "extra": "Room 1" }
+
+INVITE
+
+Invites one or more users to a room; only users in the room can invite others:
+
+json
+
+{ "type": "INVITE",
+  "roomname": "Room 1",
+  "usernames": [ "Luis", "Antonio", "Fernando" ] }
+
+If the room and users exist, the server sends an INVITATION message to each invited user:
+
+json
+
+{ "type": "INVITATION",
+  "username": "Kimberly",
+  "roomname": "Room 1" }
+
+If the room does not exist, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "INVITE",
+  "result": "NO_SUCH_ROOM",
+  "extra": "Room 1" }
+
+If one or more users do not exist, the server responds with the first missing user:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "INVITE",
+  "result": "NO_SUCH_USER",
+  "extra": "Fernando" }
+
+JOIN_ROOM
+
+Joins a room; the user must have been invited to join:
+
+json
+
+{ "type": "JOIN_ROOM",
+  "roomname": "Room 1" }
+
+On success, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "JOIN_ROOM",
+  "result": "SUCCESS",
+  "extra": "Room 1" }
+
+The server also sends the JOINED_ROOM message to all users in the room:
+
+json
+
+{ "type": "JOINED_ROOM",
+  "roomname": "Room 1",
+  "username": "Fernando" }
+
+If the room does not exist, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "JOIN_ROOM",
+  "result": "NO_SUCH_ROOM",
+  "extra": "Room 1" }
+
+If the user was not invited, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "JOIN_ROOM",
+  "result": "NOT_INVITED",
+  "extra": "Room 1" }
+
+ROOM_USERS
+
+Requests the list of users in a room:
+
+json
+
+{ "type": "ROOM_USERS",
+  "roomname": "Room 1" }
+
+If the room exists and the user has joined, the server responds:
+
+json
+
+{ "type": "ROOM_USER_LIST",
+  "roomname": "Room 1",
+  "users": { "Kimberly": "ACTIVE",
+             "Luis": "AWAY",
+             "Antonio": "BUSY",
+             "Fernando": "ACTIVE" } }
+
+If the room does not exist, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "ROOM_USERS",
+  "result": "NO_SUCH_ROOM",
+  "extra": "Room 1" }
+
+If the user is not joined in the room, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "ROOM_USERS",
+  "result": "NOT_JOINED",
+  "extra": "Room 1" }
+
+ROOM_TEXT
+
+Sends a message to a room:
+
+json
+
+{ "type": "ROOM_TEXT",
+  "roomname": "Room 1",
+  "text": "Hello Room 1!" }
+
+If the room exists and the user has joined, the server sends the ROOM_TEXT_FROM message to other users in the room:
+
+json
+
+{ "type": "ROOM_TEXT_FROM",
+  "roomname": "Room 1",
+  "username": "Kimberly",
+  "text": "Hello Room 1!" }
+
+If the room does not exist, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "ROOM_TEXT",
+  "result": "NO_SUCH_ROOM",
+  "extra": "Room 1" }
+
+If the user is not in the room, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "ROOM_TEXT",
+  "result": "NOT_JOINED",
+  "extra": "Room 1" }
+
+LEAVE_ROOM
+
+Leaves a room:
+
+json
+
+{ "type": "LEAVE_ROOM",
+  "roomname": "Room 1" }
+
+If the room exists and the user has joined, the server sends the LEFT_ROOM message to other users in the room:
+
+json
+
+{ "type": "LEFT_ROOM",
+  "roomname": "Room 1",
+  "username": "Fernando" }
+
+If the room does not exist, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "LEAVE_ROOM",
+  "result": "NO_SUCH_ROOM",
+  "extra": "Room 1" }
+
+If the user is not in the room, the server responds:
+
+json
+
+{ "type": "RESPONSE",
+  "operation": "LEAVE_ROOM",
+  "result": "NOT_JOINED",
+  "extra": "Room 1" }
+
+Messages Received by the Client
+NEW_USER
+
+A new user connected and identified:
+
+json
+
+{ "type": "NEW_USER",
+  "username": "Luis" }
+
+NEW_STATUS
+
+A user changed their status:
+
+json
+
+{ "type": "NEW_STATUS",
+  "username": "Kimberly",
+  "status": "AWAY" }
+
+USER_LIST
+
+In response to USERS:
+
+json
+
+{ "type": "USER_LIST",
+  "users": { "Kimberly": "ACTIVE",
+             "Luis": "BUSY",
+             "Fernando": "AWAY",
+             "Antonio": "ACTIVE" } }
+
+TEXT_FROM
+
+Receives a private message:
+
+json
+
+{ "type": "TEXT_FROM",
+  "username": "Luis",
+  "text": "Hi Kim, I'm good, and you?" }
+
+PUBLIC_TEXT_FROM
+
+Receives a public message:
+
+json
+
+{ "type": "PUBLIC_TEXT_FROM",
+  "username": "Kimberly",
+  "text": "Hello everyone!" }
+
+JOINED_ROOM
+
+A new user joined a room:
+
+json
+
+{ "type": "JOINED_ROOM",
+  "roomname": "Room 1",
+  "username": "Fernando" }
+
+ROOM_USER_LIST
+
+In response to ROOM_USERS:
+
+json
+
+{ "type": "ROOM_USER_LIST",
+  "roomname": "Room 1",
+  "users": { "Kimberly": "ACTIVE",
+             "Luis": "AWAY",
+             "Antonio": "BUSY",
+             "Fernando": "ACTIVE" } }
+
+ROOM_TEXT_FROM
+
+Receives a message from a room:
+
+json
+
+{ "type": "ROOM_TEXT_FROM",
+  "roomname": "Room 1",
+  "username": "Kimberly",
+  "text": "Hello Room 1!" }
