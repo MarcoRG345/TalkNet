@@ -1,8 +1,8 @@
 ## A real time chat client/server
 # Description
-<Author: Marco Antonio Raya Garcia>
-<Mail: tonyrayagarcia@gmail.com>
-Implementation real time chat aplication Client/Server. This project is interactive, using concepts of concurrency and threads this could be possible.
+<Author: Marco Antonio Raya Garcia><br>
+<Mail: tonyrayagarcia@gmail.com><br>
+real time chat aplication Client/Server implementation. This project is interactive, using concepts of concurrency and threads this could be possible.
 The implementation consists in two big parts and one most important. The server, the object server has two threads for manage multiple clients that connect 
 with it through <sockets> and request-response at the same time. A lot of computers can connect with a main computer that run the server connection, only ensure the computers,
 these computers are the clients and they can chat with the rest of the clients, can make rooms, send private messages, get a room list or general list and more features that you 
